@@ -1,0 +1,7 @@
+name = "IterativeSolverTools"
+uuid = "80a9ce7f-30e1-4797-bba4-d2a483cddab6"
+authors = ["Felix Horger <felix.horger@kcl.ac.uk>"]
+version = "0.1.0"
+
+[deps]
+IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"
