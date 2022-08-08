@@ -2,6 +2,7 @@
 module IterativeSolverTools
 
 	using IterativeSolvers
+	using LinearAlgebra
 
 	"""
 		debug_iterative_solver(iterator, debugger, types)
@@ -29,7 +30,7 @@ module IterativeSolverTools
 			j += 1
 			d = debugger(iterator, v)
 			for n in 1:N
-				history[n][j] = d[i]
+				history[n][j] = d[n]
 			end
 		end
 		history = ntuple(n -> (@view history[n][1:j]), Val(N))
@@ -97,20 +98,20 @@ module IterativeSolverTools
 		maxiter, kwargs...
 	)
 		cg_iter = cg_iterator!(x0, A, b; maxiter, kwargs...)
-		norm_y = norm(y)
 		debugger(iterator, residual) = begin
-			A_norm, nrmse = cg_debugger(A, iterator.x, y, norm_y)
-			return residual, A_norm, nrmse
+			A_norm, rmse = cg_debugger(A, iterator.x, y)
+			return residual, A_norm, rmse
 		end
-		history = debug_iterative_recon(cg_iter, debugger; typehint=NTuple{3, Float64})
+		history = debug_iterative_solver(cg_iter, debugger, NTuple{3, Float64})
 		iterations = length(history)
 		# Split debugged quantities
 		residuals = Vector{Float64}(undef, iterations)
 		A_norm = Vector{Float64}(undef, iterations)
 		nrmse = Vector{Float64}(undef, iterations)
-		for i in eachindex(history)
+		for i = 1:iterations
 			residuals[i], A_norm[i], nrmse[i] = history[i]
 		end
+		nrmse ./= norm(y)
 		return cg_iter.x, residuals, A_norm, nrmse
 	end
 
