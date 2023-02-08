@@ -63,23 +63,23 @@ module IterativeSolverTools
 	end
 
 	"""
-		debug_cg(
+		debug_cg!(
+			x::AbstractVector{<: Number},
 			A,
 			b::AbstractVector{<: Number},
-			x0::AbstractVector{<: Number},
-			y::AbstractVector{<: Number};
+			xhat::AbstractVector{<: Number};
 			kwargs...
 		)
 
-	Apply conjugate gradients to `A * y = b`, logging the quantities computed by `cg_debugger` in every iteration.
+	Apply conjugate gradients to `A * xhat = b`, logging the quantities computed by `cg_debugger` in every iteration.
 	Useful for checking that the linear operator `A` works as intended or when to stop the algorithm
-	early to be closer to the solution `y` in a non-least-squares sense.
+	early to be closer to the solution `xhat` in a non-least-squares sense.
 
 	# Arguments
 	- `A`: linear operator, must support matrix vector product;
 	- `b` => `AbstractVector{< Number}`: current estimate;
 	- `x0` => `AbstractVector{< Number}`: current estimate;
-	- `y` => `AbstractVector{<: Number}`: solution of Ay = b;
+	- `xhat` => `AbstractVector{<: Number}`: solution of A * xhat = b;
 
 	## Keywords
 	Same as the ones for `cg_iterator!`.
@@ -87,19 +87,19 @@ module IterativeSolverTools
 	# Outputs
 	- Solution found by conjugate gradients;
 	- residuals;
-	- history of A induced norm of difference `x - y`;
-	- history of root mean squared error of `x` and `y`.
+	- history of A induced norm of difference `x - xhat`;
+	- history of root mean squared error of `x` and `xhat`.
 	"""
-	function debug_cg(
+	function debug_cg!(
+		x::AbstractVector{<: Number},
 		A,
 		b::AbstractVector{<: Number},
-		x0::AbstractVector{<: Number},
-		y::AbstractVector{<: Number};
+		xhat::AbstractVector{<: Number};
 		maxiter, kwargs...
 	)
-		cg_iter = cg_iterator!(x0, A, b; maxiter, kwargs...)
+		cg_iter = cg_iterator!(x, A, b; maxiter, kwargs...)
 		debugger(iterator, residual) = begin
-			A_norm, rmse = cg_debugger(A, iterator.x, y)
+			A_norm, rmse = cg_debugger(A, iterator.x, xhat)
 			return residual, A_norm, rmse
 		end
 		history = debug_iterative_solver(cg_iter, debugger, NTuple{3, Float64})
@@ -111,7 +111,7 @@ module IterativeSolverTools
 		for i = 1:iterations
 			residuals[i], A_norm[i], nrmse[i] = history[i]
 		end
-		nrmse ./= norm(y)
+		nrmse ./= norm(xhat)
 		return cg_iter.x, residuals, A_norm, nrmse
 	end
 
