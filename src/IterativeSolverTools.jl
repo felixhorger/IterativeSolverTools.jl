@@ -3,6 +3,7 @@ module IterativeSolverTools
 
 	using IterativeSolvers
 	using LinearAlgebra
+	import Roots
 
 	"""
 		debug_iterative_solver(iterator, debugger, types)
@@ -113,6 +114,45 @@ module IterativeSolverTools
 		end
 		nrmse ./= norm(xhat)
 		return cg_iter.x, residuals, A_norm, nrmse
+	end
+
+	"""
+		computes f(κ, n) in ||e^n|| ≤ f(κ, n) ||e^0||
+		with f(κ, n) = 2 √κ ⋅ ( (√κ - 1) / (√κ + 1) )^n
+	"""
+	cg_convergence(κ::Real, n::Integer) = 2√κ ⋅ ( (√κ - 1) / (√κ + 1) )^n
+
+	"""
+		cg_required_conditioning(error::Real, n::Integer)
+
+		error = relative error, n = iterations
+
+		Derivation:
+		let a = √κ
+		error ≤ 2a ⋅ ( (a - 1) / (a + 1) )^n
+		error / 2 ≤ ( a^1/n ⋅ (a - 1) / (a + 1) )^n
+		which has the form x ≤ y^n. Assuming that x < 1 and y < 1
+		gives x^(1/n) ≥ y
+
+		(error / 2)^1/n ≥ a^1/n ⋅ (a - 1) / (a + 1)
+		b ≥ a^1/n ⋅ (a - 1) / (a + 1)
+		b ⋅ (a + 1) ≥ a^1/n ⋅ (a - 1)
+		b ≥ a^1/n ⋅ (a - 1) - b⋅a
+		b ≥ a^(n+1)/n - b⋅a - a^1/n
+		b ≥ (a^1/n)^(n+1) - b⋅(a^1/n)^n - (a^1/n)^1
+		0 ≥ c^(n+1) - b⋅c^n - c - b
+		solve for c
+		TODO: change variable names
+	"""
+	function cg_required_conditioning(error::Real, n::Integer; max_conditioning::Real=1000.0)
+		b = (0.5error)^(1.0/n)
+		polynomial(x) = begin
+			x_pow_n = x^n
+			x * x_pow_n - b * x_pow_n - x - b
+		end
+		sqrt_n_half_κ = Roots.find_zero(polynomial, (1.0, max_conditioning^(1/2n)), Roots.Bisection())
+		κ = sqrt_n_half_κ^(2n)
+		return κ
 	end
 
 end
